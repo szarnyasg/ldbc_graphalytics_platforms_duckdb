@@ -18,13 +18,21 @@ import science.atlarge.graphalytics.report.result.BenchmarkMetrics;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
 
-public class DuckDbPlatform implements Platform {
+public class DuckdbPlatform implements Platform {
 
 	protected static final Logger LOG = LogManager.getLogger();
 
 	public static final String PLATFORM_NAME = "duckdb";
-	public DuckDbLoader loader;
+	public DuckdbLoader loader;
+
+	public DuckdbPlatform() {
+		System.out.println("init platform");
+	}
 
 	@Override
 	public void verifySetup() throws Exception {
@@ -33,14 +41,13 @@ public class DuckDbPlatform implements Platform {
 
 	@Override
 	public LoadedGraph loadGraph(FormattedGraph formattedGraph) throws Exception {
-		DuckDbConfiguration platformConfig = DuckDbConfiguration.parsePropertiesFile();
-		loader = new DuckDbLoader(formattedGraph, platformConfig);
+		DuckdbConfiguration platformConfig = DuckdbConfiguration.parsePropertiesFile();
+		loader = new DuckdbLoader(formattedGraph, platformConfig);
 
 		LOG.info("Loading graph " + formattedGraph.getName());
 		Path loadedPath = Paths.get("./intermediate").resolve(formattedGraph.getName());
 
 		try {
-
 			int exitCode = loader.load(loadedPath.toString());
 			if (exitCode != 0) {
 				throw new PlatformExecutionException("DuckDB exited with an error code: " + exitCode);
@@ -56,7 +63,7 @@ public class DuckDbPlatform implements Platform {
 	public void deleteGraph(LoadedGraph loadedGraph) throws Exception {
 		LOG.info("Unloading graph " + loadedGraph.getFormattedGraph().getName());
 		try {
-
+			System.out.println("TODO: unload");
 			int exitCode = loader.unload(loadedGraph.getLoadedPath());
 			if (exitCode != 0) {
 				throw new PlatformExecutionException("DuckDB exited with an error code: " + exitCode);
@@ -76,7 +83,7 @@ public class DuckDbPlatform implements Platform {
 	public void startup(RunSpecification runSpecification) throws Exception {
 		BenchmarkRunSetup benchmarkRunSetup = runSpecification.getBenchmarkRunSetup();
 		Path logDir = benchmarkRunSetup.getLogDir().resolve("platform").resolve("runner.logs");
-		DuckDbCollector.startPlatformLogging(logDir);
+		DuckdbCollector.startPlatformLogging(logDir);
 	}
 
 	@Override
@@ -86,30 +93,38 @@ public class DuckDbPlatform implements Platform {
 		RuntimeSetup runtimeSetup = runSpecification.getRuntimeSetup();
 
 		Algorithm algorithm = benchmarkRun.getAlgorithm();
-		DuckDbConfiguration platformConfig = DuckDbConfiguration.parsePropertiesFile();
+		DuckdbConfiguration platformConfig = DuckdbConfiguration.parsePropertiesFile();
 		String inputPath = runtimeSetup.getLoadedGraph().getLoadedPath();
 		String outputPath = benchmarkRunSetup.getOutputDir().resolve(benchmarkRun.getName()).toAbsolutePath().toString();
 		Graph benchmarkGraph = benchmarkRun.getGraph();
 
-		DuckDbJob job;
+		Connection connection = null;
+		try {
+			connection = DriverManager.getConnection("jdbc:duckdb:/tmp/gx.duckdb");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new PlatformExecutionException(e.getMessage());
+		}
+
+		DuckdbJob job;
 		switch (algorithm) {
 			case BFS:
-				job = new BreadthFirstSearchJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph);
+				job = new BreadthFirstSearchJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph, connection);
 				break;
 			case CDLP:
-				job = new CommunityDetectionLPJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph);
+				job = new CommunityDetectionLPJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph, connection);
 				break;
 			case LCC:
-				job = new LocalClusteringCoefficientJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph);
+				job = new LocalClusteringCoefficientJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph, connection);
 				break;
 			case PR:
-				job = new PageRankJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph);
+				job = new PageRankJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph, connection);
 				break;
 			case SSSP:
-				job = new SingleSourceShortestPathJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph);
+				job = new SingleSourceShortestPathJob(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph, connection);
 				break;
 			case WCC:
-				job = new WeaklyConnectedComponents(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph);
+				job = new WeaklyConnectedComponents(runSpecification, platformConfig, inputPath, outputPath, benchmarkGraph, connection);
 				break;
 			default:
 				throw new PlatformExecutionException("Failed to load algorithm implementation.");
@@ -137,12 +152,12 @@ public class DuckDbPlatform implements Platform {
 
 	@Override
 	public BenchmarkMetrics finalize(RunSpecification runSpecification) throws Exception {
-		DuckDbCollector.stopPlatformLogging();
+		DuckdbCollector.stopPlatformLogging();
 		BenchmarkRunSetup benchmarkRunSetup = runSpecification.getBenchmarkRunSetup();
 		Path logDir = benchmarkRunSetup.getLogDir().resolve("platform");
 
 		BenchmarkMetrics metrics = new BenchmarkMetrics();
-		metrics.setProcessingTime(DuckDbCollector.collectProcessingTime(logDir));
+		metrics.setProcessingTime(DuckdbCollector.collectProcessingTime(logDir));
 		return metrics;
 	}
 

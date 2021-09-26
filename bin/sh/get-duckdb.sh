@@ -8,10 +8,9 @@ if [ "$(uname)" == "Darwin" ]; then
 else
   rootdir=$(dirname $(readlink -f ${BASH_SOURCE[0]}))/../..
 fi
-config="${rootdir}/config"
-if [ ! -f "$config/platform.properties" ]; then
-	echo "Missing mandatory configuration file: $config/platform.properties" >&2
-	exit 1
-fi
 
-# do nothing
+cd bin
+rm -f duckdb
+wget https://github.com/duckdb/duckdb/releases/download/v0.2.9/duckdb_cli-linux-amd64.zip
+unzip duckdb_cli-linux-amd64.zip
+rm duckdb_cli-linux-amd64.zip

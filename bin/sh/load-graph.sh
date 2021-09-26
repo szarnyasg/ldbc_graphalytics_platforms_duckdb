@@ -48,17 +48,20 @@ while [[ $# -gt 1 ]] # Parse two arguments: [--key value] or [-k value]
   shift
 done
 
-mkdir -p ${OUTPUT_PATH}
+DB_PATH=/tmp/gx.duckdb
 
-if [[ ! -f ${OUTPUT_PATH}/graph.grb && ! -f ${OUTPUT_PATH}/graph.vtb ]]; then
-    bin/exe/converter \
-        --binary true \
-        --input-vertex ${INPUT_VERTEX_PATH} \
-        --input-edge ${INPUT_EDGE_PATH} \
-        --output-matrix  ${OUTPUT_PATH}/graph.grb \
-        --output-mapping ${OUTPUT_PATH}/graph.vtb \
-        --weighted ${WEIGHTED} \
-        --directed ${DIRECTED}
+rm -f ${DB_PATH} ${DB_PATH}.wal
+
+if [ ${WEIGHTED} == "true" ]; then
+  LOAD_WEIGHT_ATTRIBUTE=", weight"
 else
-    echo "Transformed file already existing, no load required"
+  LOAD_WEIGHT_ATTRIBUTE=""
+fi
+
+bin/duckdb ${DB_PATH} "CREATE TABLE v(id INTEGER); "
+bin/duckdb ${DB_PATH} "COPY v (id) FROM '${INPUT_VERTEX_PATH}' (DELIMITER ' ', FORMAT csv); "
+bin/duckdb ${DB_PATH} "CREATE TABLE e(source INTEGER, target INTEGER); " 
+bin/duckdb ${DB_PATH} "COPY e (source, target${LOAD_WEIGHT_ATTRIBUTE}) FROM '${INPUT_EDGE_PATH}' (DELIMITER ' ', FORMAT csv); "
+if [ ${DIRECTED} == "false" ]; then
+  bin/duckdb ${DB_PATH} "COPY e (target, source${LOAD_WEIGHT_ATTRIBUTE}) FROM '${INPUT_EDGE_PATH}' (DELIMITER ' ', FORMAT csv); "
 fi

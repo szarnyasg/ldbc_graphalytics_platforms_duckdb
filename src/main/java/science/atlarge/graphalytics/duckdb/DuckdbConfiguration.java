@@ -8,7 +8,7 @@ import science.atlarge.graphalytics.configuration.GraphalyticsExecutionException
 
 import java.nio.file.Paths;
 
-public final class DuckDbConfiguration {
+public final class DuckdbConfiguration {
 
 	protected static final Logger LOG = LogManager.getLogger();
 
@@ -24,7 +24,7 @@ public final class DuckDbConfiguration {
 	/**
 	 * Creates a new DuckDbConfiguration object to capture all platform parameters that are not specific to any algorithm.
 	 */
-	public DuckDbConfiguration(){
+	public DuckdbConfiguration(){
 	}
 
 	public String getLoaderPath() {
@@ -80,9 +80,9 @@ public final class DuckDbConfiguration {
 	}
 
 
-	public static DuckDbConfiguration parsePropertiesFile() {
+	public static DuckdbConfiguration parsePropertiesFile() {
 
-		DuckDbConfiguration platformConfig = new DuckDbConfiguration();
+		DuckdbConfiguration platformConfig = new DuckdbConfiguration();
 
 		Configuration configuration = null;
 		try {

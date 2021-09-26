@@ -15,7 +15,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class DuckDbCollector {
+public class DuckdbCollector {
 
 	protected static final Logger LOG = LogManager.getLogger();
 
