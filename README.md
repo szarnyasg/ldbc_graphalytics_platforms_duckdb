@@ -10,3 +10,8 @@ Run:
 ```
 bin/sh/get-duckdb.sh
 ```
+
+To test, adjust the test.sh script. :warning: it will amend your last commit!
+```
+./test.sh
+```
