@@ -54,13 +54,15 @@ rm -f ${DB_PATH} ${DB_PATH}.wal
 
 if [ ${WEIGHTED} == "true" ]; then
   LOAD_WEIGHT_ATTRIBUTE=", weight"
+  CREATE_WEIGHT_ATTRIBUTE=", weight FLOAT"
 else
   LOAD_WEIGHT_ATTRIBUTE=""
+  CREATE_WEIGHT_ATTRIBUTE=""
 fi
 
 bin/duckdb ${DB_PATH} "CREATE TABLE v(id INTEGER); "
 bin/duckdb ${DB_PATH} "COPY v (id) FROM '${INPUT_VERTEX_PATH}' (DELIMITER ' ', FORMAT csv); "
-bin/duckdb ${DB_PATH} "CREATE TABLE e(source INTEGER, target INTEGER); " 
+bin/duckdb ${DB_PATH} "CREATE TABLE e(source INTEGER, target INTEGER${CREATE_WEIGHT_ATTRIBUTE}); " 
 bin/duckdb ${DB_PATH} "COPY e (source, target${LOAD_WEIGHT_ATTRIBUTE}) FROM '${INPUT_EDGE_PATH}' (DELIMITER ' ', FORMAT csv); "
 if [ ${DIRECTED} == "false" ]; then
   bin/duckdb ${DB_PATH} "COPY e (target, source${LOAD_WEIGHT_ATTRIBUTE}) FROM '${INPUT_EDGE_PATH}' (DELIMITER ' ', FORMAT csv); "

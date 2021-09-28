@@ -22,7 +22,6 @@ public final class LocalClusteringCoefficientJob extends DuckdbJob {
 
 	@Override
 	public int execute() throws Exception {
-		System.out.println("executing query");
 		Statement stmt = connection.createStatement();
 		if (benchmarkGraph.isDirected()) {
 			stmt.execute("CREATE VIEW neighbors AS (\n" +
@@ -74,7 +73,7 @@ public final class LocalClusteringCoefficientJob extends DuckdbJob {
 					") s\n" +
 					")");
 		}
-		stmt.execute("COPY (SELECT id, value FROM lcc) TO '/tmp/lcc.csv' WITH (DELIMITER ' ')");
+		stmt.execute("COPY (SELECT id, value FROM lcc ORDER BY id) TO '/tmp/lcc.csv' WITH (DELIMITER ' ')");
 		return 0;
 	}
 
